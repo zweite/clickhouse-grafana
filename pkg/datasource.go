@@ -28,6 +28,7 @@ type ClickhouseDatasource struct {
 }
 
 func (ch *ClickhouseDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
+	ch.logger.Debug("clickhouse databasesource ", tsdbReq.String())
 	url := tsdbReq.Datasource.Url + "/query"
 	response := &datasource.DatasourceResponse{}
 	for _, query := range tsdbReq.Queries {
@@ -36,6 +37,7 @@ func (ch *ClickhouseDatasource) Query(ctx context.Context, tsdbReq *datasource.D
 			return nil, err
 		}
 
+		ch.logger.Debug(q.RawQuery)
 		r, err := ch.doQuery(ctx, url, q.GetQuery(query, tsdbReq.GetTimeRange()))
 		if err != nil {
 			return nil, err
@@ -70,10 +72,10 @@ func (ch *ClickhouseDatasource) doQuery(ctx context.Context, url, query string) 
 		return nil, err
 	}
 
-	return parseResponse(body)
+	return ParseResponse(body)
 }
 
-func parseResponse(body []byte) (*datasource.QueryResult, error) {
+func ParseResponse(body []byte) (*datasource.QueryResult, error) {
 	var dto targetResponseDTO
 	if err := json.Unmarshal(body, &dto); err != nil {
 		return nil, err
@@ -122,12 +124,38 @@ func parseResponse(body []byte) (*datasource.QueryResult, error) {
 				push(k, ts, v)
 			case []interface{}:
 				for _, row := range v {
-					r, ok := row.([]interface{})
+					rr, ok := row.([]interface{})
 					if !ok {
-						reportUnsupported(v)
+						reportUnsupported(row)
 						return nil, errUnsupportedType
 					}
-					push(r[0].(string), ts, r[1])
+
+					switch rr[0].(type) {
+					case []interface{}:
+						rs, ok := rr[0].([]interface{})
+						if !ok {
+							reportUnsupported(v)
+							continue
+						}
+						var rks string
+						for _, sr := range rs {
+							if rk, ok := sr.(string); ok {
+								rks += rk + ","
+							}
+						}
+
+						if len(rks) < 2 {
+							reportUnsupported(rs)
+							continue
+						}
+
+						rks = rks[:len(rks)-1]
+						push(rks, ts, rr[1])
+					case string:
+						if rk, ok := rr[0].(string); ok {
+							push(rk, ts, rr[1])
+						}
+					}
 				}
 			default:
 				reportUnsupported(v)

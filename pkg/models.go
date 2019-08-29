@@ -40,7 +40,7 @@ type queryModel struct {
 	Interval            string `json:"interval"`
 	IntervalFactor      int64  `json:"intervalFactor"`
 	Query               string `json:"query"`
-	RawQuery            bool   `json:"rawQuery"`
+	RawQuery            string `json:"rawQuery"`
 	RefID               string `json:"refId"`
 	Round               string `json:"round"`
 	Table               string `json:"table"`
@@ -48,6 +48,10 @@ type queryModel struct {
 }
 
 func (q *queryModel) GetQuery(query *datasource.Query, timeRange *datasource.TimeRange) string {
+	if q.RawQuery != "" {
+		return q.RawQuery
+	}
+
 	table := q.Table
 	if strings.TrimSpace(q.Database) != "" {
 		table = q.Database + "." + table
