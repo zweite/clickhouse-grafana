@@ -28,8 +28,6 @@ type ClickhouseDatasource struct {
 }
 
 func (ch *ClickhouseDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
-	ch.logger.Debug(tsdbReq.String())
-	ch.logger.Debug("clickhouse databasesource ", tsdbReq.String())
 	url := tsdbReq.Datasource.Url + "/query"
 	response := &datasource.DatasourceResponse{}
 	for _, query := range tsdbReq.Queries {
