@@ -179,10 +179,12 @@ func ParseResponse(body []byte) (*datasource.QueryResult, error) {
 		series = append(series, serie)
 	}
 
-	if len(series) > 2 {
-		// 去掉头尾两个时序数据.防止数据取值区间异常报警
-		series = series[1:]
-		series = series[:len(series)-1]
+	for _, seri := range series {
+		if len(seri.Points) > 2 {
+			// 去掉头尾两个时序数据.防止数据取值区间异常报警
+			seri.Points = seri.Points[1:]
+			seri.Points = seri.Points[:len(seri.Points)-1]
+		}
 	}
 
 	return &datasource.QueryResult{
