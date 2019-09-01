@@ -28,36 +28,47 @@ type meta struct {
 }
 
 type queryModel struct {
-	Database            string `json:"database"`
-	DateLoading         bool   `json:"dateLoading"`
-	DateColDataType     string `json:"dateColDataType"`
-	DateType            string `json:"dateType"`
-	DateTimeColDataType string `json:"dateTimeColDataType"`
-	DateTimeType        string `json:"dateTimeType"`
-	DatetimeLoading     bool   `json:"datetimeLoading"`
-	Format              string `json:"format"`
-	FormattedQuery      string `json:"formattedQuery"`
-	Interval            string `json:"interval"`
-	IntervalFactor      int64  `json:"intervalFactor"`
-	Query               string `json:"query"`
-	RawQuery            string `json:"rawQuery"`
-	RefID               string `json:"refId"`
-	Round               string `json:"round"`
-	Table               string `json:"table"`
-	TableLoading        bool   `json:"tableLoading"`
+	Database            string      `json:"database"`
+	DateLoading         bool        `json:"dateLoading"`
+	DateColDataType     string      `json:"dateColDataType"`
+	DateType            string      `json:"dateType"`
+	DateTimeColDataType string      `json:"dateTimeColDataType"`
+	DateTimeType        string      `json:"dateTimeType"`
+	DatetimeLoading     bool        `json:"datetimeLoading"`
+	Format              string      `json:"format"`
+	FormattedQuery      string      `json:"formattedQuery"`
+	Interval            string      `json:"interval"`
+	IntervalFactor      int64       `json:"intervalFactor"`
+	Query               string      `json:"query"`
+	RawQuery            interface{} `json:"rawQuery"`
+	RefID               string      `json:"refId"`
+	Round               string      `json:"round"`
+	Table               string      `json:"table"`
+	TableLoading        bool        `json:"tableLoading"`
 }
 
 func (q *queryModel) GetQuery(query *datasource.Query, timeRange *datasource.TimeRange) string {
-	if q.RawQuery != "" {
-		return q.RawQuery
-	}
-
 	table := q.Table
 	if strings.TrimSpace(q.Database) != "" {
 		table = q.Database + "." + table
 	}
 
 	interval := q.getInterval()
+
+	// $table - replaced with selected table name from Query Builder
+	// $dateCol - replaced with Date:Col value from Query Builder
+	// $dateTimeCol - replaced with Column:DateTime or Column:TimeStamp value from Query Builder
+	// $from - replaced with timestamp/1000 value of selected "Time Range:From"
+	// $to - replaced with timestamp/1000 value of selected "Time Range:To"
+	// $interval - replaced with selected "Group by time interval" value (as a number of seconds)
+	// $timeFilter - replaced with currently selected "Time Range".
+	//             Require Column:Date and Column:DateTime or Column:TimeStamp to be selected
+	// $timeSeries - replaced with special ClickHouse construction to convert results as time-series data.
+	//             Use it as "SELECT $timeSeries...". Require Column:DateTime or Column:TimeStamp to be selected
+	// $unescape - unescapes variable value by removing single quotes.
+	//             Used for multiple-value string variables: "SELECT $unescape($column) FROM requests WHERE $unescape($column) = 5"
+	// $adhoc - replaced with a rendered ad-hoc filter expression, or "1" if no ad-hoc filters exist
+	// A description of macros is available by typing their names in Raw Editor
 
 	querySQL := q.Query
 	querySQL = strings.Replace(querySQL, "$timeSeries", q.getTimeSeries(), -1)

@@ -37,7 +37,6 @@ func (ch *ClickhouseDatasource) Query(ctx context.Context, tsdbReq *datasource.D
 			return nil, err
 		}
 
-		ch.logger.Debug(q.RawQuery)
 		r, err := ch.doQuery(ctx, url, q.GetQuery(query, tsdbReq.GetTimeRange()))
 		if err != nil {
 			return nil, err
