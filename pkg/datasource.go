@@ -180,6 +180,12 @@ func ParseResponse(body []byte) (*datasource.QueryResult, error) {
 		series = append(series, serie)
 	}
 
+	if len(series) > 2 {
+		// 去掉头尾两个时序数据.防止数据取值区间异常报警
+		series = series[1:]
+		series = series[:len(series)-1]
+	}
+
 	return &datasource.QueryResult{
 		Series: series,
 	}, nil
